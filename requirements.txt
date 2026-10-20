@@ -1,0 +1,10 @@
+numpy
+pandas
+matplotlib
+opencv-python
+scikit-learn
+scikit-image
+requests
+tqdm
+jupyter
+# abc-optimizer-lib  # add once published to PyPI
