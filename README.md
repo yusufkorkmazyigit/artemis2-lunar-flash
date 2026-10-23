@@ -1,63 +1,89 @@
-# artemis2-lunar-flash 🌕
+# artemis2-lunar-flash
 
-**Did a camera catch what the astronauts saw?**
+[![CI](https://github.com/yusufkorkmazyigit/artemis2-lunar-flash/actions/workflows/ci.yml/badge.svg)](https://github.com/yusufkorkmazyigit/artemis2-lunar-flash/actions/workflows/ci.yml)
 
-During the Artemis II lunar flyby (April 2026), the crew reported **five faint impact flashes** on the Moon's far side during a ~54-minute total solar eclipse. They were seen with the unaided eye, possibly the faintest lunar impact flashes ever observed by humans, and recorded through crew audio and hand-drawn annotations. No flash has been reported in imagery so far.
+**Did the cameras catch what the astronauts saw?**
 
-This project builds an open, time-aligned **audio ↔ image** index of the Artemis II lunar science archive, then uses it to search the crew camera frames taken around each reported sighting for a photographic counterpart.
+During the ~54-minute total solar eclipse behind the Moon in April 2026, the Artemis II crew
+reported five faint lunar impact flashes **by naked eye**. NASA's released material does not
+report any of them in photos or video.
 
-> Status: 🚧 Phase 1 in progress
+This project builds an open, time-aligned index that links every crew utterance to the
+photographs taken at that moment, then uses it to search the Nikon Z9/D5 frames around each
+flash call-out for a transient point source — or to set a per-event brightness upper limit.
 
-## Why this matters
+> Data: NASA/CSA, Planetary Data System (PDS4). This project is not affiliated with or
+> endorsed by NASA, CSA, ESA or Airbus.
 
-- Small-impactor flux on the Moon is a real hazard input for future lunar habitats and infrastructure.
-- Artemis II is the first planetary science dataset gathered primarily by humans in more than 50 years. Its value depends on linking what the crew *said* to what the cameras *recorded*, and today nothing does that directly.
-- A camera detection (or a well-constrained non-detection) of an eye-witnessed flash would be a useful, citable result.
+## Why it matters
 
-## Plan
+- **Science:** small-impactor flux on the Moon is a risk input for future lunar infrastructure.
+- **Data:** the Artemis II archive is the first planetary science data set collected mainly
+  by humans in over 50 years. No public tool yet links what the crew *said* to what the
+  cameras *recorded*.
+- **Hardware:** the archive also includes imagery from cameras on the solar-array wings of the
+  European Service Module (ESM).
 
-### Phase 1: Observation index & explorer (target: mid-December 2026)
-Open dataset and tool linking crew speech to images by time.
-- [ ] Map PDS bundles; list eclipse-window products (crew Nikon Z9/D5, Orion cameras)
-- [ ] Parse PDS4 XML labels → table of image ID, camera, lens, exposure, `start_date_time`
-- [ ] Parse PCD audio transcripts (Whisper where transcripts are missing) → timestamped utterances
-- [ ] Join utterances ↔ images on synchronized Orion clock time
+## Roadmap
+
+### Phase 1: Observation index and explorer (target: 2026-12-14)
+- [x] Repository scaffold, packaging, CI (lint + tests)
+- [x] PDS4 label parser (`parse_label`) and `a2flash index` command
+- [ ] Locate eclipse flight day and UTC window (Data User Guide + Archive Explorer)
+- [ ] Validate parser against 3 real Artemis II labels; map camera/lens/exposure keys
+- [ ] Download eclipse-window subset (selective, resumable, checksummed)
+- [ ] Transcript parser → time-stamped utterance table (Whisper fallback)
+- [ ] Utterance ↔ frame alignment, manually verified on 10 samples
 - [ ] Publish dataset (Hugging Face + Zenodo DOI)
-- [ ] Web explorer: pick a moment, hear/read the crew, see the frames
+- [ ] Web explorer
 
-### Phase 2: Flash search (target: early January 2027)
-- [ ] Extract each "flash" callout time from audio/transcripts and annotations
-- [ ] Pull Z9/D5 frames within a window around each callout
-- [ ] Transient search: frame differencing, PSF-like point-source detection on the night side
-- [ ] Reject false positives: cosmic-ray hits, hot pixels, window/cabin reflections, solar-array glare
-- [ ] Report detections or upper limits per event
-- [ ] Short abstract: LPSC 2027 (15–19 March 2027) or Europlanet Science Congress 2027
+### Phase 2: Flash search (target: 2027-01-10)
+- [ ] Candidate frames per call-out window
+- [ ] Hot-pixel masks, difference imaging, PSF-matched transient detection
+- [ ] Vetting: cosmic rays, hot pixels, window/cabin reflections
+- [ ] Injection–recovery efficiency, false-alarm rate, per-event upper limits
+- [ ] One-page abstract
 
-### Phase 3: Stretch
-- [ ] Geolocate frames once the SPICE bundle is released
-- [ ] Extend the index to all flyby observation targets
+### Phase 3: Extension (when the SPICE bundle is released)
+- [ ] Georeference frames onto lunar maps
 
-## Data
+## Quick start
 
-- Source: [PDS Artemis II archive](https://pds-geosciences.wustl.edu/missions/artemis2/index.htm), with the crew camera, Orion camera and mission audio bundles
-- Start with the [Lunar Science Data User Guide](https://pds-geosciences.wustl.edu/artemis2/urn-nasa-pds-artemis2_mission/document/artemis2_data_user_guide.pdf)
-- Caveats from the guide: no science-grade radiometric calibration, uncharacterized multi-layer windows, cabin glare, and NASA ID order ≠ observation time (always sort by `start_date_time`)
-- Raw data is **not** stored in this repo. Download into `data/raw/`.
-- Credit: images and audio courtesy of NASA/CSA.
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+pytest && ruff check . && ruff format --check .
 
-## Structure
-
-```
-data/          raw/ and processed/ (git-ignored)
-notebooks/     exploration
-src/           download, label parsing, alignment, flash search
-docs/          notes, abstract drafts
+a2flash parse-label path/to/label.xml           # one label as JSON
+a2flash index --labels-dir data/raw/labels --out data/interim/frames.parquet
 ```
 
-## Author
+Rows are always sorted by `start_utc`. Product numbers reflect catalog order, not capture
+order. Every row keeps its `lidvid` so each value traces back to its PDS product.
 
-Yusuf Korkmazyiğit · [yusufkorkmazyigit.com](https://yusufkorkmazyigit.com)
+## Repository layout
+
+```
+src/a2flash/      package (pds/, audio/, align/, flash/, explorer/)
+tests/            pytest suite and label fixtures
+configs/          paths, time windows, thresholds
+docs/             decisions log and project context
+data/             raw/ (read-only), interim/, processed/ — not tracked by git
+```
+
+## Data sources
+
+| Bundle | DOI |
+|---|---|
+| `artemis2_crew_camera` | [10.17189/x52v-tb80](https://doi.org/10.17189/x52v-tb80) |
+| `artemis2_orion_camera` | [10.17189/hzev-nq50](https://doi.org/10.17189/hzev-nq50) |
+| `artemis2_mission_audio` | [10.17189/4a29-dz64](https://doi.org/10.17189/4a29-dz64) |
+| `artemis2_mission` | [10.17189/36fx-pd80](https://doi.org/10.17189/36fx-pd80) |
+
+- [Artemis II Data User Guide](https://pds-geosciences.wustl.edu/artemis2/urn-nasa-pds-artemis2_mission/document/artemis2_data_user_guide.pdf)
+- [Artemis II Preliminary Lunar Science Report](https://science.nasa.gov/feature/artemis-ii-preliminary-lunar-science-report/)
 
 ## License
 
-MIT (code). Data belongs to NASA/CSA and follows NASA media usage guidelines.
+Code: MIT. Data remain subject to NASA/CSA media usage guidelines; credit "NASA/CSA" and
+the PDS bundle DOIs when using derived products.

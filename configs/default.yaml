@@ -1,0 +1,17 @@
+# Paths and parameters. Values marked TODO are filled in once verified from the Data User Guide.
+paths:
+  raw: data/raw
+  interim: data/interim
+  processed: data/processed
+
+eclipse:
+  flight_day: null        # TODO(week1): verify from Data User Guide / Archive Explorer
+  start_utc: null         # TODO(week1)
+  stop_utc: null          # TODO(week1)
+
+alignment:
+  window_seconds: 60      # utterance <-> frame matching window (+/-)
+
+download:
+  max_requests_per_second: 2
+  verify_checksums: true

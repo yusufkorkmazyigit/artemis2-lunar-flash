@@ -1,0 +1,52 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "a2flash"
+version = "0.1.0"
+description = "Time-aligned index of Artemis II crew audio and imagery, and a search for lunar impact flashes."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Yusuf Korkmazyigit" }]
+keywords = ["artemis", "nasa", "pds4", "lunar-impact-flash", "planetary-science"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Astronomy",
+]
+dependencies = [
+    "lxml>=5.0",
+    "pandas>=2.1",
+    "pyarrow>=15.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pytest-cov>=5.0", "ruff>=0.6", "mypy>=1.10", "lxml-stubs", "pandas-stubs"]
+
+[project.scripts]
+a2flash = "a2flash.cli:main"
+
+[project.urls]
+Repository = "https://github.com/yusufkorkmazyigit/artemis2-lunar-flash"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/a2flash"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "PT", "RUF", "N"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src"]

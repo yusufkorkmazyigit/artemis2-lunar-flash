@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SYNTHETIC FIXTURE. Not a real Artemis II label.
+  Core PDS4 structure only; discipline element names are placeholders.
+  Replace with 3 real labels from the archive in Week 2 (see docs/decisions.md).
+-->
+<Product_Observational xmlns="http://pds.nasa.gov/pds4/pds/v1"
+                       xmlns:img="http://pds.nasa.gov/pds4/img/v1">
+  <Identification_Area>
+    <logical_identifier>urn:nasa:pds:artemis2_crew_camera:data_raw:art002e000001_z9019_raw</logical_identifier>
+    <version_id>1.0</version_id>
+    <title>Synthetic Z9 frame</title>
+  </Identification_Area>
+  <Observation_Area>
+    <Time_Coordinates>
+      <start_date_time>2026-04-06T23:41:12.250Z</start_date_time>
+      <stop_date_time>2026-04-06T23:41:13.250Z</stop_date_time>
+    </Time_Coordinates>
+    <Discipline_Area>
+      <img:Exposure>
+        <img:exposure_duration unit="s">1.0</img:exposure_duration>
+      </img:Exposure>
+      <img:Optical_Filter>
+        <img:filter_name>none</img:filter_name>
+      </img:Optical_Filter>
+      <img:Optical_Filter>
+        <img:filter_name>window2</img:filter_name>
+      </img:Optical_Filter>
+    </Discipline_Area>
+  </Observation_Area>
+  <File_Area_Observational>
+    <File>
+      <file_name>art002e000001_z9019_raw_v01.tif</file_name>
+    </File>
+  </File_Area_Observational>
+</Product_Observational>
