@@ -36,7 +36,7 @@ Artemis II astronotları Ay'ın arka yüzündeki tam güneş tutulması sırası
 ## 4. Arka plan: ne oldu?
 
 - Artemis II, Nisan 2026'da 4 astronotla Ay'ın çevresinden dolaştı: Reid Wiseman, Victor Glover, Christina Koch (NASA), Jeremy Hansen (CSA).
-- Ay'ın arka yüzündeyken, planlı iletişim kesintisi sırasında yaklaşık **54 dakika süren bir tam güneş tutulması** yaşandı. Orion o sırada Ay'a yaklaşık 46.000 mil uzaktaydı.
+- Ay'ın arka yüzünden geçişten (iletişim kesintisi 6 Nisan 22:46–23:24 UTC) **sonra**, yaklaşık **54–57 dakika süren bir tam güneş tutulması** yaşandı. Kaynaklara göre tutulma ~7 Nisan 01:35–02:32 UTC (geçici; etiketlerden doğrulanacak, bkz. `configs/default.yaml`). Orion o sırada Ay'a yaklaşık 46.000 mil uzaktaydı.
 - Bu karanlıkta astronotlar Ay yüzeyinde **5 iğne ucu gibi ışık parlaması** gördü. NASA'ya göre bunlar insan gözüyle görülmüş en soluk Ay parlamaları olabilir.
 - NASA bilim ekibi kozmik ışın ve uzay aracı yansımalarını eledikten sonra gözlemleri doğruladı.
 - **İşaretler:** 6 Nisan 2026 tarihli bir tablet ekran görüntüsünde, tutulmadaki Ay'ın **simüle edilmiş** bir görüntüsü üzerine elle çizilmiş notlar var. Wiseman mavi, Glover yeşil, Hansen kırmızı. Parlamalar #1–#5 olarak numaralı, yanlarında gözlemci noktaları var. Taban görüntü simülasyon olduğu için konumlar **yaklaşık**.
@@ -254,7 +254,7 @@ LPSC sitesi: https://www.hou.usra.edu/meetings/lpsc2027/
 
 ## 10. Açık sorular
 
-- [ ] Tutulma hangi uçuş gününde, hangi UTC aralığında? (Rehber + Archive Explorer)
+- [~] Tutulma UTC aralığı geçici olarak bulundu (~7 Nisan 01:35–02:32 UTC). Hangi `fdXX` klasöründe olduğu ve gerçek etiket zamanları hâlâ doğrulanacak.
 - [ ] Tutulma sırasında Z9'un pozlama ayarları neydi? Uzun pozlama var mı?
 - [ ] Deşifrelerde zaman damgası var mı, yoksa ses dosyası başlangıcı + ofsetten mi hesaplanacak?
 - [ ] Tablo 18 (Nikon kimlikleri ↔ WAV etiketleri) nerede, hangi biçimde?

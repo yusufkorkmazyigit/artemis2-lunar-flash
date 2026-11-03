@@ -22,3 +22,10 @@ Format: date — decision — rationale.
 - **2026-10-23** — `a2flash index` currently reads a local labels directory. The
   `--bundle/--flight-day` interface from the plan will wrap this once the download module
   exists (Week 3).
+- **2026-11-04** — Provisional eclipse search window `2026-04-07T01:10Z`–`02:57Z` (secondary
+  sources: eclipse 01:35–02:32 UTC, padded ±25 min). Marked `verified: false` until real
+  Z9/D5 label timestamps confirm it. Note: the eclipse came *after* the far-side
+  communications blackout (22:46–23:24 UTC on 2026-04-06), not during it. The UTC date is
+  2026-04-07 while NASA calls it mission day 6, so the `fdXX` folder must be checked.
+- **2026-11-04** — Removed leftover `src/__init__.py` and `src/download.py` from the first
+  scaffold (they broke mypy module resolution); added `py.typed`; mypy now runs in CI.
