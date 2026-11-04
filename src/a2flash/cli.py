@@ -10,6 +10,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from a2flash import __version__
+from a2flash.pds.download import download_labels
 from a2flash.pds.frames import to_frames
 from a2flash.pds.index import build_index
 from a2flash.pds.labels import LabelParseError, parse_label
@@ -39,6 +40,17 @@ def _cmd_index(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_download_labels(args: argparse.Namespace) -> int:
+    stats = download_labels(
+        args.url,
+        args.out,
+        max_requests_per_second=args.rate,
+        limit=args.limit,
+    )
+    print(f"downloaded {stats.downloaded}, skipped {stats.skipped}, failed {stats.failed}")
+    return 1 if stats.failed else 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="a2flash", description=__doc__)
     p.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -59,6 +71,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="frames: typed frames table (default); raw: every label key",
     )
     ix.set_defaults(func=_cmd_index)
+
+    dl = sub.add_parser(
+        "download-labels", help="download all product labels (*.xml) of one PDS folder"
+    )
+    dl.add_argument("url", help="folder URL, e.g. .../artemis2_crew_camera/data_raw/fd06/")
+    dl.add_argument("--out", type=Path, required=True, help="e.g. data/raw/labels/fd06")
+    dl.add_argument("--rate", type=float, default=2.0, help="max requests per second")
+    dl.add_argument("--limit", type=int, default=None, help="only the first N labels (testing)")
+    dl.set_defaults(func=_cmd_download_labels)
     return p
 
 

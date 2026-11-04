@@ -49,3 +49,8 @@ Format: date — decision — rationale.
   eclipse image is captioned 01:04 UTC, earlier than the 01:35 start from Wikipedia, and
   art002e009300 at 01:04 is already a dark-side setting (6 s, ISO 1600, f/2 vs 1/1000 s,
   ISO 400, f/8 on the lit Moon). Narrow it once the eclipse activity frames are found.
+- **2026-11-04** — The `data_raw` inventory CSV (10,329 products) lists LIDVIDs only, not the
+  `fdXX` folder, so download URLs cannot be built from it. `a2flash download-labels` instead
+  reads one folder's HTML index and fetches only product labels (`*.xml`): stdlib `urllib`,
+  2 req/s, retries with backoff on 5xx/429/network errors, `.part` + rename, existing valid
+  labels skipped. Images are a separate, later step limited to the eclipse window.
