@@ -54,3 +54,14 @@ Format: date — decision — rationale.
   reads one folder's HTML index and fetches only product labels (`*.xml`): stdlib `urllib`,
   2 req/s, retries with backoff on 5xx/429/network errors, `.part` + rename, existing valid
   labels skipped. Images are a separate, later step limited to the eclipse window.
+- **2026-11-04** — The archive's CloudFront/S3 folders do not allow directory listing
+  (`AccessDenied`), so `download-labels` cannot list fd06. Switched discovery to the PDS
+  Imaging Atlas search API (Elasticsearch, `POST /api/search/atlas/_search`). Each hit already
+  carries the flattened label plus file URI, size and MD5 for both the TIF and the label.
+  `a2flash atlas-frames` builds the `frames` table for a UTC window in one query, mapping Atlas
+  keys onto the same raw keys as `parse_label` so both paths share `to_frames` (a test checks
+  that the API row equals the label row for art002e009300). The query is loose; every hit is
+  re-checked client-side (bundle, collection, `.tif`, time window). Paging uses from/size and
+  refuses windows over 10,000 hits. `download-labels` stays for servers that do list folders.
+- **2026-11-04** — Known gap: the Atlas does not carry units, so the unit check in
+  `to_frames` only runs on the label path. Units were verified on the label fixtures.

@@ -10,10 +10,11 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from a2flash import __version__
+from a2flash.pds.atlas import search_frames
 from a2flash.pds.download import download_labels
 from a2flash.pds.frames import to_frames
 from a2flash.pds.index import build_index
-from a2flash.pds.labels import LabelParseError, parse_label
+from a2flash.pds.labels import LabelParseError, parse_label, parse_utc
 
 
 def _cmd_parse_label(args: argparse.Namespace) -> int:
@@ -37,6 +38,24 @@ def _cmd_index(args: argparse.Namespace) -> int:
     else:
         df.to_parquet(out, index=False)
     print(f"wrote {len(df)} rows -> {out}")
+    return 0
+
+
+def _cmd_atlas_frames(args: argparse.Namespace) -> int:
+    start, stop = parse_utc(args.start), parse_utc(args.stop)
+    if start is None or stop is None or stop <= start:
+        print("error: need --start < --stop (UTC with 'Z')", file=sys.stderr)
+        return 2
+    df = search_frames(start, stop, bundle=args.bundle, collection=args.collection)
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    if out.suffix == ".csv":
+        df.to_csv(out, index=False)
+    else:
+        df.to_parquet(out, index=False)
+    print(f"wrote {len(df)} frames -> {out}")
+    if len(df):
+        print(df.groupby(["camera", "activity_id"], dropna=False).size().to_string())
     return 0
 
 
@@ -71,6 +90,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="frames: typed frames table (default); raw: every label key",
     )
     ix.set_defaults(func=_cmd_index)
+
+    af = sub.add_parser("atlas-frames", help="frames table for a UTC window from the Atlas API")
+    af.add_argument("--start", required=True, help="UTC, e.g. 2026-04-07T00:30:00Z")
+    af.add_argument("--stop", required=True, help="UTC, exclusive")
+    af.add_argument("--out", type=Path, required=True, help="*.parquet or *.csv")
+    af.add_argument("--bundle", default="artemis2_crew_camera")
+    af.add_argument("--collection", default="data_raw")
+    af.set_defaults(func=_cmd_atlas_frames)
 
     dl = sub.add_parser(
         "download-labels", help="download all product labels (*.xml) of one PDS folder"
