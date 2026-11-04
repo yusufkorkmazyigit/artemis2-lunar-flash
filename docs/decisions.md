@@ -61,11 +61,18 @@ Format: date — decision — rationale.
   `a2flash atlas-frames` builds the `frames` table for a UTC window in one query, mapping Atlas
   keys onto the same raw keys as `parse_label` so both paths share `to_frames` (a test checks
   that the API row equals the label row for art002e009300). The query is loose; every hit is
-  re-checked client-side (bundle, collection, `.tif`, time window). Paging uses from/size and
-  refuses windows over 10,000 hits. `download-labels` stays for servers that do list folders.
+  re-checked client-side (bundle, collection, `.tif`, time window).  `download-labels` stays for servers that do list folders.
 - **2026-11-04** — Known gap: the Atlas does not carry units, so the unit check in
   `to_frames` only runs on the label path. Units were verified on the label fixtures.
 - **2026-11-04** — First live Atlas run: the provisional window 00:30–03:00 UTC holds 2,189
   crew-camera raw frames. Pages of 500 hits made the API return 502 (response too large;
   each hit carries the full flattened label). Default page size is now 100, halved on 5xx
   down to 10; 4xx errors are not retried.
+- **2026-11-04** — from/size paging is unreliable on this index: a 2,189-hit window
+  returned 669 repeated hits, so 669 frames were silently missing (first table had 1,520
+  rows). Replaced paging with time-window bisection: a slice is fetched only when its total
+  fits in one response (`total <= page_size`), otherwise it is split in half (ms precision).
+  No reliance on sort order or offsets. Repeated `_id`s are still counted and warned about.
+- **2026-11-04** — Eclipse frames are labelled by activity: `26_Eclipsed Moon (1/2)` and
+  `28_Eclipsed Moon (2/2)`, between `24_Sunset` and `30_Sunrise` (D5-015, D5-017, Z9). The
+  Z9 also has `h_Observation Break` frames in the window, to be checked for Moon coverage.

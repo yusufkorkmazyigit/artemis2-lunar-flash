@@ -37,18 +37,29 @@ def _hit(product: str, time: str, **archive: Any) -> dict[str, Any]:
     return h
 
 
+def _t(text: str) -> datetime:
+    return datetime.fromisoformat(text.replace("Z", "+00:00"))
+
+
 class FakeAtlas:
-    def __init__(self, hits: list[dict[str, Any]], total: int | None = None) -> None:
-        self.hits, self.total = hits, total
+    """Honours the time-range filter and ``size`` like the real index (no paging)."""
+
+    def __init__(self, hits: list[dict[str, Any]]) -> None:
+        self.hits = hits
         self.queries: list[dict[str, Any]] = []
 
     def __call__(self, url: str, body: bytes) -> bytes:
         assert url == atlas.SEARCH_URL
         q = json.loads(body)
+        assert "from" not in q
         self.queries.append(q)
-        page = self.hits[q["from"] : q["from"] + q["size"]]
-        total = self.total if self.total is not None else len(self.hits)
-        return json.dumps({"hits": {"total": {"value": total}, "hits": page}}).encode()
+        rng = q["query"]["bool"]["filter"][3]["range"]["gather.time.start_time"]
+        lo, hi = _t(rng["gte"]), _t(rng["lt"])
+        match = [
+            h for h in self.hits if lo <= _t(h["_source"]["gather"]["time"]["start_time"]) < hi
+        ]
+        body_out = {"hits": {"total": {"value": len(match)}, "hits": match[: q["size"]]}}
+        return json.dumps(body_out).encode()
 
 
 def test_atlas_row_matches_label_parser(tmp_path: Path) -> None:
@@ -65,20 +76,26 @@ def test_atlas_row_matches_label_parser(tmp_path: Path) -> None:
     assert from_api["file_name"] == from_label["file_name"]
 
 
-def test_search_pages_filters_and_sorts() -> None:
+def test_search_bisects_filters_and_sorts() -> None:
     hits = [
         _hit("art002e000003", "2026-04-07T02:00:00.000Z"),
         _hit("art002e000001", "2026-04-07T01:00:00.000Z"),
-        _hit("art002e000002", "2026-04-07T05:00:00.000Z"),  # outside window
         _hit("art002e000004", "2026-04-07T01:30:00.000Z", bundle_id="other"),  # wrong bundle
         _hit("art002e000005", "2026-04-07T01:45:00.000Z"),
+        _hit("art002e000006", "2026-04-07T01:45:00.001Z"),  # 1 ms after the previous one
     ]
     fake = FakeAtlas(hits)
-    df = search_frames(START, STOP, page_size=2, post=fake)
+    df = search_frames(START, STOP, page_size=2, post=fake, sleep=lambda _: None)
 
-    assert [q["from"] for q in fake.queries] == [0, 2, 4]
-    assert list(df["product_id"]) == ["art002e000001", "art002e000005", "art002e000003"]
+    # Every hit fetched exactly once although no slice may return more than 2.
+    assert list(df["product_id"]) == [
+        "art002e000001",
+        "art002e000005",
+        "art002e000006",
+        "art002e000003",
+    ]
     assert df["start_utc"].is_monotonic_increasing
+    assert all(q["size"] == 2 for q in fake.queries)
     assert df.loc[0, "image_md5"] == "df2edbf850381172fab1733ac68db287"
     assert df.loc[0, "image_bytes"] == 91412576
     assert df.loc[0, "label_md5"] == "0a2dc83c3975bfe569ab5194625c9292"
@@ -86,12 +103,25 @@ def test_search_pages_filters_and_sorts() -> None:
     assert df.loc[0, "image_uri"].endswith("/fd06/art002e000001_nkz9019_raw_v01.tif")
 
     rng = fake.queries[0]["query"]["bool"]["filter"][3]["range"]["gather.time.start_time"]
-    assert rng == {"gte": "2026-04-07T00:30:00Z", "lt": "2026-04-07T03:00:00Z"}
+    assert rng == {"gte": "2026-04-07T00:30:00.000Z", "lt": "2026-04-07T03:00:00.000Z"}
 
 
-def test_too_many_hits_raises() -> None:
-    with pytest.raises(RuntimeError, match="split the time range"):
-        search_frames(START, STOP, post=FakeAtlas([HIT], total=20_000))
+def test_large_window_is_fetched_completely() -> None:
+    # 250 frames, 3 s apart, page size 20: nothing may be lost or repeated.
+    base = datetime(2026, 4, 7, 1, 0, tzinfo=UTC)
+    hits = []
+    for i in range(250):
+        t = (base + pd.Timedelta(seconds=3 * i)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+        hits.append(_hit(f"art002e{i:06d}", t))
+    df = search_frames(START, STOP, page_size=20, post=FakeAtlas(hits), sleep=lambda _: None)
+    assert len(df) == 250
+    assert df["product_id"].is_unique
+
+
+def test_too_many_hits_in_one_millisecond_raises() -> None:
+    same = [_hit(f"art002e00000{i}", "2026-04-07T01:00:00.000Z") for i in range(3)]
+    with pytest.raises(RuntimeError, match="cannot split further"):
+        search_frames(START, STOP, page_size=2, post=FakeAtlas(same), sleep=lambda _: None)
 
 
 def test_empty_result_has_schema() -> None:
@@ -145,7 +175,7 @@ def test_5xx_halves_page_size() -> None:
 
     df = search_frames(START, STOP, page_size=40, post=picky, sleep=lambda _: None)
     assert len(df) == 5
-    assert sizes[:3] == [40, 20, 10]
+    assert sizes == [40, 20, 10]
 
 
 def test_4xx_is_not_retried() -> None:

@@ -22,7 +22,7 @@ import urllib.error
 import urllib.request
 from collections import Counter
 from collections.abc import Callable, Iterator
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from urllib.parse import quote
 
@@ -36,10 +36,10 @@ log = logging.getLogger(__name__)
 
 SEARCH_URL = "https://pds-imaging.jpl.nasa.gov/api/search/atlas/_search"
 DATA_URL = "https://pds-imaging.jpl.nasa.gov/api/data/"
-MAX_WINDOW = 10_000  # Elasticsearch default max_result_window
 # Each hit carries the whole flattened label (~10-15 kB). 500 hits per page made the API
 # answer 502 (2026-11-04, response too large); 100 works. On a 5xx the page is halved.
 MIN_PAGE = 10
+MIN_SLICE = timedelta(milliseconds=1)
 
 Post = Callable[[str, bytes], bytes]
 
@@ -90,6 +90,11 @@ def data_url(uri: str) -> str:
     return DATA_URL + quote(uri, safe=":/")
 
 
+def _iso(t: datetime) -> str:
+    # millisecond precision, matching the index; "Z" suffix
+    return t.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%S.") + f"{t.microsecond // 1000:03d}Z"
+
+
 def build_query(
     start: datetime,
     stop: datetime,
@@ -97,13 +102,10 @@ def build_query(
     bundle: str,
     collection: str,
     size: int,
-    offset: int,
 ) -> dict[str, Any]:
     return {
-        "from": offset,
         "size": size,
         "track_total_hits": True,
-        "sort": ["_doc"],
         "_source": ["uri", "archive", "gather", "pds4_label"],
         "query": {
             "bool": {
@@ -111,14 +113,7 @@ def build_query(
                     {"match_phrase": {"archive.bundle_id": bundle}},
                     {"match_phrase": {"archive.collection_id": collection}},
                     {"match_phrase": {"archive.file_extension": "tif"}},
-                    {
-                        "range": {
-                            "gather.time.start_time": {
-                                "gte": start.isoformat().replace("+00:00", "Z"),
-                                "lt": stop.isoformat().replace("+00:00", "Z"),
-                            }
-                        }
-                    },
+                    {"range": {"gather.time.start_time": {"gte": _iso(start), "lt": _iso(stop)}}},
                 ]
             }
         },
@@ -158,6 +153,20 @@ def hit_to_row(hit: dict[str, Any]) -> dict[str, Any]:
     return row
 
 
+def _query_slice(
+    start: datetime,
+    stop: datetime,
+    *,
+    bundle: str,
+    collection: str,
+    size: int,
+    post: Post,
+) -> tuple[int, list[dict[str, Any]]]:
+    query = build_query(start, stop, bundle=bundle, collection=collection, size=size)
+    resp = json.loads(post(SEARCH_URL, json.dumps(query).encode()))
+    return int(resp["hits"]["total"]["value"]), list(resp["hits"]["hits"])
+
+
 def iter_hits(
     start: datetime,
     stop: datetime,
@@ -168,33 +177,40 @@ def iter_hits(
     post: Post = http_post,
     sleep: Callable[[float], None] = time.sleep,
 ) -> Iterator[dict[str, Any]]:
-    offset, total = 0, None
-    while total is None or offset < total:
-        query = build_query(
-            start, stop, bundle=bundle, collection=collection, size=page_size, offset=offset
-        )
+    """Yield every hit in ``[start, stop)`` without relying on from/size paging.
+
+    from/size paging over this index returned repeated hits (and so skipped others,
+    2026-11-04). Instead the window is bisected until each slice fits in a single
+    response (``total <= page_size``), so every slice is fetched completely in one call.
+    """
+    pending = [(start, stop)]
+    while pending:
+        a, b = pending.pop()
         try:
-            resp = json.loads(post(SEARCH_URL, json.dumps(query).encode()))
+            total, hits = _query_slice(
+                a, b, bundle=bundle, collection=collection, size=page_size, post=post
+            )
         except urllib.error.HTTPError as exc:
             if exc.code < 500 or page_size <= MIN_PAGE:
                 raise
             page_size = max(MIN_PAGE, page_size // 2)
             log.warning("atlas HTTP %d; retrying with page size %d", exc.code, page_size)
             sleep(2.0)
+            pending.append((a, b))
             continue
-        hits = resp["hits"]["hits"]
-        if total is None:
-            total = int(resp["hits"]["total"]["value"])
-            log.info("atlas: %d hits for %s .. %s", total, start, stop)
-            if total > MAX_WINDOW:
-                raise RuntimeError(
-                    f"{total} hits exceed the API paging window ({MAX_WINDOW}); "
-                    "split the time range"
-                )
-        if not hits:
-            break
-        yield from hits
-        offset += len(hits)
+        if total <= page_size:
+            if len(hits) != total:
+                raise RuntimeError(f"atlas returned {len(hits)} of {total} hits for {a}..{b}")
+            log.debug("slice %s .. %s: %d hits", a, b, total)
+            yield from hits
+            continue
+        if b - a <= MIN_SLICE:
+            raise RuntimeError(f"{total} hits within {b - a} at {a}; cannot split further")
+        mid = a + (b - a) / 2
+        mid = mid.replace(microsecond=mid.microsecond // 1000 * 1000)  # index has ms precision
+        if mid <= a:
+            mid = a + MIN_SLICE
+        pending.extend([(mid, b), (a, mid)])  # (a, mid) is popped first: time order
 
 
 #: A few example ``_id`` values per drop reason, from the last ``search_frames`` call.
