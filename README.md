@@ -56,7 +56,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 pytest && ruff check . && ruff format --check .
 
-a2flash atlas-frames --start 2026-04-07T00:30:00Z --stop 2026-04-07T03:00:00Z \
+a2flash atlas-frames --start 2026-04-07T00:30:00Z --stop 2026-04-07T01:50:00Z \
     --out data/interim/eclipse_frames.csv      # frames in a UTC window, via the Atlas API
 a2flash parse-label path/to/label.xml           # one label as JSON
 a2flash index --labels-dir data/raw/labels --out data/interim/frames.parquet   # typed frames table

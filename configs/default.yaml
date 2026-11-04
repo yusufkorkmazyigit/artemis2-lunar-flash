@@ -5,15 +5,17 @@ paths:
   processed: data/processed
 
 eclipse:
-  # PROVISIONAL (2026-11-04). Secondary sources give the eclipse as 01:35-02:32 UTC on
-  # 2026-04-07 (Wikipedia) and ~54 min long (NASA preliminary report); NASA's simulated
-  # eclipse image is captioned 2026-04-07 01:04 UTC. Real labels show flight day 6 still
-  # running at 01:04 UTC (art002e009300, Z9, 6 s @ ISO 1600) and flight day 7 by 21:37 UTC.
-  # Window is widened to cover both readings until the eclipse frames are identified.
-  flight_day: 6           # crew_camera/data_*/fd06 (flight day != UTC date)
-  start_utc: "2026-04-07T00:30:00Z"   # provisional, widened
-  stop_utc: "2026-04-07T03:00:00Z"    # provisional, widened
+  # From the crew-camera activity labels (Atlas query of 00:30-03:00 UTC, 2026-11-04):
+  #   24_Sunset 00:34:11-00:53:22, 26/28_Eclipsed Moon 00:55:22-01:22:50,
+  #   30_Sunrise 01:22:50-01:34:51; one frame after that (01:48), none 01:50-03:00.
+  # So the dark period lies inside ~00:34-01:35 UTC (~1 h, consistent with NASA's 54 min).
+  # Wikipedia's 01:35-02:32 UTC does NOT match the camera data. Exact Sun-loss and
+  # Sun-return times still need the transcripts or the images themselves.
+  flight_day: 6
+  start_utc: "2026-04-07T00:30:00Z"
+  stop_utc: "2026-04-07T01:50:00Z"
   verified: false
+  activities: ["26_Eclipsed Moon (1/2)", "28_Eclipsed Moon (2/2)"]
 
 alignment:
   window_seconds: 60      # utterance <-> frame matching window (+/-)

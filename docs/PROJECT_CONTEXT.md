@@ -36,7 +36,7 @@ Artemis II astronotları Ay'ın arka yüzündeki tam güneş tutulması sırası
 ## 4. Arka plan: ne oldu?
 
 - Artemis II, Nisan 2026'da 4 astronotla Ay'ın çevresinden dolaştı: Reid Wiseman, Victor Glover, Christina Koch (NASA), Jeremy Hansen (CSA).
-- Ay'ın arka yüzünden geçişten (iletişim kesintisi 6 Nisan 22:46–23:24 UTC) **sonra**, yaklaşık **54–57 dakika süren bir tam güneş tutulması** yaşandı. Kaynaklara göre tutulma ~7 Nisan 01:35–02:32 UTC (geçici; etiketlerden doğrulanacak, bkz. `configs/default.yaml`). Orion o sırada Ay'a yaklaşık 46.000 mil uzaktaydı.
+- Ay'ın arka yüzünden geçişten (iletişim kesintisi 6 Nisan 22:46–23:24 UTC) **sonra**, yaklaşık **54 dakika süren bir tam güneş tutulması** yaşandı. Kamera aktivitelerine göre karanlık dönem ~7 Nisan 00:34–01:35 UTC içinde (Wikipedia'nın 01:35–02:32'si verilerle uyuşmuyor; bkz. `docs/decisions.md`). Orion o sırada Ay'a yaklaşık 46.000 mil uzaktaydı.
 - Bu karanlıkta astronotlar Ay yüzeyinde **5 iğne ucu gibi ışık parlaması** gördü. NASA'ya göre bunlar insan gözüyle görülmüş en soluk Ay parlamaları olabilir.
 - NASA bilim ekibi kozmik ışın ve uzay aracı yansımalarını eledikten sonra gözlemleri doğruladı.
 - **İşaretler:** 6 Nisan 2026 tarihli bir tablet ekran görüntüsünde, tutulmadaki Ay'ın **simüle edilmiş** bir görüntüsü üzerine elle çizilmiş notlar var. Wiseman mavi, Glover yeşil, Hansen kırmızı. Parlamalar #1–#5 olarak numaralı, yanlarında gözlemci noktaları var. Taban görüntü simülasyon olduğu için konumlar **yaklaşık**.
@@ -255,7 +255,9 @@ LPSC sitesi: https://www.hou.usra.edu/meetings/lpsc2027/
 
 ## 10. Açık sorular
 
-- [~] Tutulma **fd06** klasöründe (uçuş günü 6, UTC gece yarısını geçiyor). Geçici pencere 7 Nisan 00:30–03:00 UTC; tutulma karelerinin `activity_id` değeri bulunup daraltılacak.
+- [x] Tutulma **fd06**'da. Kamera aktiviteleri: Sunset 00:34–00:53, **Eclipsed Moon 00:55–01:23** (279 kare, 14,7 GB), Sunrise 01:23–01:35 UTC. Wikipedia'daki 01:35–02:32 kamera verisiyle uyuşmuyor.
+- [ ] Güneşin kaybolup geri geldiği kesin anlar (deşifre ya da görüntüden).
+- [ ] Her parlama çağrısının (call-out) anında herhangi bir kamera pozlamada mıydı? Tutulma boyunca kameralar zamanın yalnızca ~%4'ünde ışık topluyor.
 - [ ] Tutulma sırasında Z9'un pozlama ayarları neydi? Uzun pozlama var mı?
 - [ ] Deşifrelerde zaman damgası var mı, yoksa ses dosyası başlangıcı + ofsetten mi hesaplanacak?
 - [ ] Tablo 18 (Nikon kimlikleri ↔ WAV etiketleri) nerede, hangi biçimde?

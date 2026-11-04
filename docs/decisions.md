@@ -76,3 +76,15 @@ Format: date — decision — rationale.
 - **2026-11-04** — Eclipse frames are labelled by activity: `26_Eclipsed Moon (1/2)` and
   `28_Eclipsed Moon (2/2)`, between `24_Sunset` and `30_Sunrise` (D5-015, D5-017, Z9). The
   Z9 also has `h_Observation Break` frames in the window, to be checked for Moon coverage.
+- **2026-11-04** — Complete eclipse-window table (2,189 frames, all flight day 6). Activity
+  spans (UTC): Sunset 00:34–00:53, Eclipsed Moon (1/2) 00:55–01:04, Eclipsed Moon (2/2)
+  01:05–01:23, Sunrise 01:23–01:35. 279 frames are labelled Eclipsed Moon (D5-015 196,
+  D5-017 21, Z9 62; 14.7 GB of TIFs). The camera timeline contradicts Wikipedia's
+  01:35–02:32 UTC eclipse; the config window is now 00:30–01:50 UTC. Exact Sun-loss/return
+  times are still open (transcripts or images).
+- **2026-11-04** — Exposure duty cycle: during the 27.5 min of Eclipsed Moon activity, at
+  least one camera was exposing only 61 s (3.7 %); over Sunset→Sunrise (61 min), 150 s
+  (4.1 %). A flash lasting well under a second therefore had at most a few-percent chance of
+  falling inside any exposure, before pointing is even considered. This frames Phase 2:
+  the expected outcome is per-event non-detection with a stated probability of coverage,
+  and the first step is to check whether any exposure overlaps each call-out time.
