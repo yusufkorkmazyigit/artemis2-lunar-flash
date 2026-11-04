@@ -82,11 +82,15 @@ REAL = {
     "d5_017": FIXTURES / "art002e009276_nkd5017_raw_v01.xml",
     "d5_015": FIXTURES / "art002e009279_nkd5015_raw_v01.xml",
 }
+LATE = {
+    "z9_fd06_after_midnight": FIXTURES / "art002e009300_nkz9019_raw_v01.xml",
+    "z9_fd07": FIXTURES / "art002e028292_nkz9019_raw_v01.xml",
+}
 
 
-@pytest.mark.parametrize("name", list(REAL))
-def test_real_labels_parse(name: str) -> None:
-    row = parse_label(REAL[name])
+@pytest.mark.parametrize("path", [*REAL.values(), *LATE.values()], ids=[*REAL, *LATE])
+def test_real_labels_parse(path: Path) -> None:
+    row = parse_label(path)
     assert row["lid"].startswith("urn:nasa:pds:artemis2_crew_camera:data_raw:")
     assert row["start_utc"].tzinfo is not None
     assert row["stop_utc"] is None  # nil (nilReason="missing") in real labels
@@ -132,3 +136,20 @@ def test_cli_index_frames_schema(tmp_path: Path) -> None:
     df = pd.read_csv(out)
     assert list(df.columns)[:3] == ["lidvid", "product_id", "camera"]
     assert len(df) == 3
+
+
+def test_flight_day_is_not_the_utc_date(tmp_path: Path) -> None:
+    # Flight day 6 runs past UTC midnight: never derive flight_day from the UTC date.
+    for path in LATE.values():
+        shutil.copy(path, tmp_path / path.name)
+    frames = to_frames(build_index(tmp_path))
+    fd6, fd7 = frames.iloc[0], frames.iloc[1]
+    assert fd6["start_utc"] == datetime(2026, 4, 7, 1, 4, 57, 460000, tzinfo=UTC)
+    assert fd6["flight_day"] == 6
+    assert fd7["start_utc"].date() == fd6["start_utc"].date()
+    assert fd7["flight_day"] == 7
+    # Long dark-side exposures (integer seconds in the label) parse as floats.
+    assert fd6["exposure_s"] == 6.0
+    assert fd6["iso"] == 1600
+    assert fd6["f_number"] == 2.0
+    assert fd6["activity_id"] == "i_Window Team Position Swap"

@@ -41,3 +41,11 @@ Format: date — decision — rationale.
   `flight_day_number = 6`. Whether the eclipse (~2026-04-07 01:35 UTC) sits in fd06 or fd07 is
   still open. The three sampled frames are 1/1000 s at ISO 400 (daylit Moon), so eclipse
   frames should look very different (long exposures) — check that when they are found.
+- **2026-11-04** — Eclipse frames are expected in **fd06**: a Z9 frame at
+  2026-04-07T01:04:57Z (art002e009300) still has `flight_day_number = 6`, and a fd07 Z9 frame
+  is at 2026-04-07T21:37Z. So flight day 6 crosses UTC midnight; `flight_day` must always come
+  from the label, never from the UTC date (test added).
+- **2026-11-04** — Widened the provisional window to 00:30–03:00 UTC. Reason: NASA's simulated
+  eclipse image is captioned 01:04 UTC, earlier than the 01:35 start from Wikipedia, and
+  art002e009300 at 01:04 is already a dark-side setting (6 s, ISO 1600, f/2 vs 1/1000 s,
+  ISO 400, f/8 on the lit Moon). Narrow it once the eclipse activity frames are found.

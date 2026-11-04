@@ -255,7 +255,7 @@ LPSC sitesi: https://www.hou.usra.edu/meetings/lpsc2027/
 
 ## 10. Açık sorular
 
-- [~] Tutulma UTC aralığı geçici olarak bulundu (~7 Nisan 01:35–02:32 UTC). Hangi `fdXX` klasöründe olduğu ve gerçek etiket zamanları hâlâ doğrulanacak.
+- [~] Tutulma **fd06** klasöründe (uçuş günü 6, UTC gece yarısını geçiyor). Geçici pencere 7 Nisan 00:30–03:00 UTC; tutulma karelerinin `activity_id` değeri bulunup daraltılacak.
 - [ ] Tutulma sırasında Z9'un pozlama ayarları neydi? Uzun pozlama var mı?
 - [ ] Deşifrelerde zaman damgası var mı, yoksa ses dosyası başlangıcı + ofsetten mi hesaplanacak?
 - [ ] Tablo 18 (Nikon kimlikleri ↔ WAV etiketleri) nerede, hangi biçimde?

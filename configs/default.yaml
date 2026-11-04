@@ -5,13 +5,14 @@ paths:
   processed: data/processed
 
 eclipse:
-  # PROVISIONAL (2026-11-04), from secondary sources; not yet checked against PDS labels.
-  #   Wikipedia "Artemis II": eclipse 01:35-02:32 UTC (57 min), after the 22:46-23:24 UTC
-  #   far-side blackout on 2026-04-06. NASA preliminary report: Sun hidden ~54 min; flashes
-  #   #1, #2, #4 ~10 min into the eclipse. Search window padded by +/-25 min until verified.
-  flight_day: null        # TODO(week2): which fdXX folder holds 2026-04-07 ~01-03 UTC frames?
-  start_utc: "2026-04-07T01:10:00Z"   # provisional, padded
-  stop_utc: "2026-04-07T02:57:00Z"    # provisional, padded
+  # PROVISIONAL (2026-11-04). Secondary sources give the eclipse as 01:35-02:32 UTC on
+  # 2026-04-07 (Wikipedia) and ~54 min long (NASA preliminary report); NASA's simulated
+  # eclipse image is captioned 2026-04-07 01:04 UTC. Real labels show flight day 6 still
+  # running at 01:04 UTC (art002e009300, Z9, 6 s @ ISO 1600) and flight day 7 by 21:37 UTC.
+  # Window is widened to cover both readings until the eclipse frames are identified.
+  flight_day: 6           # crew_camera/data_*/fd06 (flight day != UTC date)
+  start_utc: "2026-04-07T00:30:00Z"   # provisional, widened
+  stop_utc: "2026-04-07T03:00:00Z"    # provisional, widened
   verified: false
 
 alignment:
