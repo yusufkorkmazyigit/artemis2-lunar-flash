@@ -30,6 +30,7 @@ def _hit(product: str, time: str, **archive: Any) -> dict[str, Any]:
     src = h["_source"]
     uri = src["archive"]["uri"].replace("art002e009300", product)
     src["archive"].update(uri=uri, name=uri.rsplit("/", 1)[1], **archive)
+    h["_id"] = uri
     src["gather"]["time"]["start_time"] = time
     src["pds4_label"]["lidvid"] = src["pds4_label"]["lidvid"].replace("art002e009300", product)
     src["pds4_label"]["lid"] = src["pds4_label"]["lid"].replace("art002e009300", product)
@@ -153,3 +154,23 @@ def test_4xx_is_not_retried() -> None:
 
     with pytest.raises(urllib.error.HTTPError):
         search_frames(START, STOP, post=bad, sleep=lambda _: None)
+
+
+def test_drop_reasons_are_reported(caplog: pytest.LogCaptureFixture) -> None:
+    good = _hit("art002e000001", "2026-04-07T01:00:00.000Z")
+    hits = [
+        good,
+        copy.deepcopy(good),  # same file, second index entry
+        _hit("art002e000002", "2026-04-07T01:10:00.000Z", bundle_id="other"),
+        _hit("art002e000003", "2026-04-07T01:20:00.000Z", file_extension="xml"),
+    ]
+    with caplog.at_level("INFO", logger="a2flash.pds.atlas"):
+        df = search_frames(START, STOP, page_size=10, post=FakeAtlas(hits))
+    assert len(df) == 1
+    assert atlas.DROP_EXAMPLES.keys() == {
+        "duplicate image_uri",
+        "bundle=other",
+        "extension=xml",
+    }
+    assert "same _id returned twice: 1" in caplog.text
+    assert "some frames may be missing" in caplog.text

@@ -20,6 +20,7 @@ import logging
 import time
 import urllib.error
 import urllib.request
+from collections import Counter
 from collections.abc import Callable, Iterator
 from datetime import datetime
 from typing import Any
@@ -196,6 +197,28 @@ def iter_hits(
         offset += len(hits)
 
 
+#: A few example ``_id`` values per drop reason, from the last ``search_frames`` call.
+DROP_EXAMPLES: dict[str, list[str]] = {}
+
+
+def _drop_reason(
+    row: dict[str, Any], start: datetime, stop: datetime, *, bundle: str, collection: str
+) -> str | None:
+    if row["bundle_id"] != bundle:
+        return f"bundle={row['bundle_id']}"
+    if row["collection_id"] != collection:
+        return f"collection={row['collection_id']}"
+    if row["file_extension"] != "tif":
+        return f"extension={row['file_extension']}"
+    if row["start_utc"] is None:
+        return "no start time"
+    if not start <= row["start_utc"] < stop:
+        return "outside window"
+    if not row["image_uri"]:
+        return "no uri"
+    return None
+
+
 def search_frames(
     start: datetime,
     stop: datetime,
@@ -207,7 +230,11 @@ def search_frames(
     sleep: Callable[[float], None] = time.sleep,
 ) -> pd.DataFrame:
     """Frames (one row per image product) with ``start <= start_utc < stop``."""
+    DROP_EXAMPLES.clear()
     rows: dict[str, dict[str, Any]] = {}
+    seen_ids: Counter[str] = Counter()
+    drops: Counter[str] = Counter()
+    n_hits = 0
     for hit in iter_hits(
         start,
         stop,
@@ -217,18 +244,32 @@ def search_frames(
         post=post,
         sleep=sleep,
     ):
+        n_hits += 1
+        seen_ids[str(hit.get("_id"))] += 1
         row = hit_to_row(hit)
-        ok = (
-            row["bundle_id"] == bundle
-            and row["collection_id"] == collection
-            and row["file_extension"] == "tif"
-            and row["start_utc"] is not None
-            and start <= row["start_utc"] < stop
-        )
-        if ok and row["image_uri"]:
-            rows[row["image_uri"]] = row  # de-duplicate across pages
-        elif not ok:
-            log.debug("dropped hit outside filter: %s", hit.get("_id"))
+        reason = _drop_reason(row, start, stop, bundle=bundle, collection=collection)
+        if reason is None and row["image_uri"] in rows:
+            reason = "duplicate image_uri"
+        if reason is None:
+            rows[row["image_uri"]] = row
+        else:
+            drops[reason] += 1
+            if len(DROP_EXAMPLES.setdefault(reason, [])) < 3:
+                DROP_EXAMPLES[reason].append(str(hit.get("_id")))
+
+    repeated = sum(c - 1 for c in seen_ids.values() if c > 1)
+    log.info(
+        "atlas: %d hits read, %d kept, %d dropped %s; same _id returned twice: %d",
+        n_hits,
+        len(rows),
+        sum(drops.values()),
+        dict(drops),
+        repeated,
+    )
+    for reason, ids in DROP_EXAMPLES.items():
+        log.info("  e.g. %s: %s", reason, ids)
+    if repeated:
+        log.warning("paging returned %d repeated hits: some frames may be missing", repeated)
 
     raw = pd.DataFrame(list(rows.values()))
     if raw.empty:
