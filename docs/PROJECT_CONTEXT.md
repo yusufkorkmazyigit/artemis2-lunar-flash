@@ -64,6 +64,7 @@ Toplam **800 GB'ın biraz üstü**, NASA Planetary Data System'de (PDS), 3 düğ
 - Her ürün = 1 veri dosyası + 1 ayrı XML etiketi (PDS4 label).
 - LID örneği: `urn:nasa:pds:artemis2_crew_camera:data_source:art002eXXXXXX_nkd5015_src.nef`
 - Fotoğraf kimliği: `art002e` + 6 hane. Video: `art002m` + 10 hane.
+- Kamera kimlikleri dosya adında: `nkz9019` (Z9), `nkd5015`, `nkd5017` (D5). Etiketlerde `msn:flight_day_number` ve gözlem amacı (`activity_id`, ör. `17_Discussion #5: Limb`) var; `stop_date_time` boş.
 - Dosya adı örüntüleri:
   - `art002eXXXXXX_nkd5015_raw_vXX.tif` (Nikon D5 SN 3500015, ham)
   - `art002eXXXXXX_saw3_src_vXX.jpg` (SAW Cam 3, kaynak)
@@ -76,7 +77,7 @@ Toplam **800 GB'ın biraz üstü**, NASA Planetary Data System'de (PDS), 3 düğ
 |---|---|---|---|
 | D5-015 | 3500015 | 80–400 mm "Long Lens" (~%98) | |
 | D5-017 | 3500017 | 12–24 mm "Short Lens" (~%57), Long Lens (~%29) | Rehberde hem 12–24 hem 14–24 geçiyor, tutarsız |
-| **Z9-019** | 39200019 | 35 mm (~%74) | **Tutulma gözlemlerinin ana kamerası** |
+| **Z9-019** | 3920019 | 35 mm (~%74) | **Tutulma gözlemlerinin ana kamerası** |
 
 Formatlar: kaynak = NEF · ham = TIFF (2B dizi) · kısmen işlenmiş = TIFF (3B dizi) · önizleme = PNG.
 

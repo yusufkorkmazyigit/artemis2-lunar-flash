@@ -10,6 +10,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from a2flash import __version__
+from a2flash.pds.frames import to_frames
 from a2flash.pds.index import build_index
 from a2flash.pds.labels import LabelParseError, parse_label
 
@@ -26,6 +27,8 @@ def _cmd_parse_label(args: argparse.Namespace) -> int:
 
 def _cmd_index(args: argparse.Namespace) -> int:
     df = build_index(args.labels_dir)
+    if args.schema == "frames":
+        df = to_frames(df)
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     if out.suffix == ".csv":
@@ -49,6 +52,12 @@ def build_parser() -> argparse.ArgumentParser:
     ix = sub.add_parser("index", help="index a directory of labels to Parquet/CSV")
     ix.add_argument("--labels-dir", type=Path, required=True)
     ix.add_argument("--out", type=Path, required=True, help="*.parquet or *.csv")
+    ix.add_argument(
+        "--schema",
+        choices=["frames", "raw"],
+        default="frames",
+        help="frames: typed frames table (default); raw: every label key",
+    )
     ix.set_defaults(func=_cmd_index)
     return p
 

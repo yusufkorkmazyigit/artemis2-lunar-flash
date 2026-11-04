@@ -30,7 +30,7 @@ flash call-out for a transient point source — or to set a per-event brightness
 - [x] Repository scaffold, packaging, CI (lint + tests)
 - [x] PDS4 label parser (`parse_label`) and `a2flash index` command
 - [ ] Locate eclipse flight day and UTC window (Data User Guide + Archive Explorer)
-- [ ] Validate parser against 3 real Artemis II labels; map camera/lens/exposure keys
+- [x] Validate parser against 3 real Artemis II labels; map camera/lens/exposure keys (`frames` table)
 - [ ] Download eclipse-window subset (selective, resumable, checksummed)
 - [ ] Transcript parser → time-stamped utterance table (Whisper fallback)
 - [ ] Utterance ↔ frame alignment, manually verified on 10 samples
@@ -55,7 +55,8 @@ pip install -e ".[dev]"
 pytest && ruff check . && ruff format --check .
 
 a2flash parse-label path/to/label.xml           # one label as JSON
-a2flash index --labels-dir data/raw/labels --out data/interim/frames.parquet
+a2flash index --labels-dir data/raw/labels --out data/interim/frames.parquet   # typed frames table
+a2flash index --labels-dir data/raw/labels --out raw.parquet --schema raw         # every label key
 ```
 
 Rows are always sorted by `start_utc`. Product numbers reflect catalog order, not capture

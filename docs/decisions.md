@@ -29,3 +29,15 @@ Format: date — decision — rationale.
   2026-04-07 while NASA calls it mission day 6, so the `fdXX` folder must be checked.
 - **2026-11-04** — Removed leftover `src/__init__.py` and `src/download.py` from the first
   scaffold (they broke mypy module resolution); added `py.typed`; mypy now runs in CI.
+- **2026-11-04** — Added 3 real labels from `crew_camera/data_raw/fd06` as fixtures (Z9 SN
+  3920019, D5 SN 3500015, D5 SN 3500017). `parse_label` handles them unchanged. Findings:
+  `stop_date_time` is nil; labels carry `msn:flight_day_number` and an observational intent
+  (`activity_id`, e.g. `17_Discussion #5: Limb`; `target_id` only sometimes). The Z9 serial is
+  `3920019` (not `39200019`). Camera ids in file names are `nkz9019` / `nkd5015` / `nkd5017`.
+- **2026-11-04** — New `a2flash.pds.frames.to_frames` maps verified label keys to the typed
+  `frames` table; `a2flash index` now writes it by default (`--schema raw` keeps every key).
+  Units for focal length (mm) and exposure (s) are checked, not assumed.
+- **2026-11-04** — fd06 frames so far span 2026-04-06 15:25–22:34 UTC with
+  `flight_day_number = 6`. Whether the eclipse (~2026-04-07 01:35 UTC) sits in fd06 or fd07 is
+  still open. The three sampled frames are 1/1000 s at ISO 400 (daylit Moon), so eclipse
+  frames should look very different (long exposures) — check that when they are found.

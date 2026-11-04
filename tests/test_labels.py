@@ -4,9 +4,11 @@ import shutil
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 from a2flash.cli import main
+from a2flash.pds.frames import to_frames
 from a2flash.pds.index import build_index
 from a2flash.pds.labels import LabelParseError, parse_label, parse_utc
 
@@ -69,5 +71,64 @@ def test_index_sorts_by_time_not_product_number(tmp_path: Path) -> None:
 def test_cli_index_writes_parquet(tmp_path: Path) -> None:
     shutil.copy(SYNTH, tmp_path / "a.xml")
     out = tmp_path / "out" / "frames.parquet"
-    assert main(["index", "--labels-dir", str(tmp_path), "--out", str(out)]) == 0
+    assert main(["index", "--labels-dir", str(tmp_path), "--out", str(out), "--schema", "raw"]) == 0
     assert out.exists()
+
+
+# --- Real Artemis II labels (crew_camera/data_raw/fd06), downloaded 2026-11-04 ---
+
+REAL = {
+    "z9": FIXTURES / "art002e009291_nkz9019_raw_v01.xml",
+    "d5_017": FIXTURES / "art002e009276_nkd5017_raw_v01.xml",
+    "d5_015": FIXTURES / "art002e009279_nkd5015_raw_v01.xml",
+}
+
+
+@pytest.mark.parametrize("name", list(REAL))
+def test_real_labels_parse(name: str) -> None:
+    row = parse_label(REAL[name])
+    assert row["lid"].startswith("urn:nasa:pds:artemis2_crew_camera:data_raw:")
+    assert row["start_utc"].tzinfo is not None
+    assert row["stop_utc"] is None  # nil (nilReason="missing") in real labels
+
+
+def test_real_labels_to_frames(tmp_path: Path) -> None:
+    for path in REAL.values():
+        shutil.copy(path, tmp_path / path.name)
+    frames = to_frames(build_index(tmp_path))
+
+    assert list(frames["product_id"]) == ["art002e009276", "art002e009279", "art002e009291"]
+    assert frames["start_utc"].is_monotonic_increasing
+    z9 = frames.iloc[2]
+    assert z9["camera"] == "nkz9019"
+    assert z9["camera_model"] == "nikon_z9"
+    assert z9["serial_number"] == "3920019"
+    assert z9["start_utc"] == datetime(2026, 4, 6, 22, 34, 33, 980000, tzinfo=UTC)
+    assert z9["flight_day"] == 6
+    assert z9["focal_mm"] == 35.0
+    assert z9["exposure_s"] == 0.001
+    assert z9["iso"] == 400
+    assert z9["activity_id"] == "17_Discussion #5: Limb"
+    assert z9["target_id"] == "Limb"
+    assert pd.isna(frames.iloc[0]["target_id"])  # absent in the D5-017 label
+    assert set(frames["camera"]) == {"nkd5015", "nkd5017", "nkz9019"}
+
+
+def test_to_frames_rejects_unexpected_unit(tmp_path: Path) -> None:
+    path = REAL["z9"]
+    text = path.read_text(encoding="utf-8").replace(
+        '<img:exposure_duration unit="s">', '<img:exposure_duration unit="ms">'
+    )
+    (tmp_path / path.name).write_text(text, encoding="utf-8")
+    with pytest.raises(ValueError, match="expected unit"):
+        to_frames(build_index(tmp_path))
+
+
+def test_cli_index_frames_schema(tmp_path: Path) -> None:
+    for path in REAL.values():
+        shutil.copy(path, tmp_path / path.name)
+    out = tmp_path / "frames.csv"
+    assert main(["index", "--labels-dir", str(tmp_path), "--out", str(out)]) == 0
+    df = pd.read_csv(out)
+    assert list(df.columns)[:3] == ["lidvid", "product_id", "camera"]
+    assert len(df) == 3
