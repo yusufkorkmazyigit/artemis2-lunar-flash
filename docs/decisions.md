@@ -65,3 +65,7 @@ Format: date — decision — rationale.
   refuses windows over 10,000 hits. `download-labels` stays for servers that do list folders.
 - **2026-11-04** — Known gap: the Atlas does not carry units, so the unit check in
   `to_frames` only runs on the label path. Units were verified on the label fixtures.
+- **2026-11-04** — First live Atlas run: the provisional window 00:30–03:00 UTC holds 2,189
+  crew-camera raw frames. Pages of 500 hits made the API return 502 (response too large;
+  each hit carries the full flattened label). Default page size is now 100, halved on 5xx
+  down to 10; 4xx errors are not retried.

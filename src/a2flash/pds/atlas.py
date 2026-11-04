@@ -17,6 +17,8 @@ from __future__ import annotations
 
 import json
 import logging
+import time
+import urllib.error
 import urllib.request
 from collections.abc import Callable, Iterator
 from datetime import datetime
@@ -34,6 +36,9 @@ log = logging.getLogger(__name__)
 SEARCH_URL = "https://pds-imaging.jpl.nasa.gov/api/search/atlas/_search"
 DATA_URL = "https://pds-imaging.jpl.nasa.gov/api/data/"
 MAX_WINDOW = 10_000  # Elasticsearch default max_result_window
+# Each hit carries the whole flattened label (~10-15 kB). 500 hits per page made the API
+# answer 502 (2026-11-04, response too large); 100 works. On a 5xx the page is halved.
+MIN_PAGE = 10
 
 Post = Callable[[str, bytes], bytes]
 
@@ -158,15 +163,24 @@ def iter_hits(
     *,
     bundle: str = "artemis2_crew_camera",
     collection: str = "data_raw",
-    page_size: int = 500,
+    page_size: int = 100,
     post: Post = http_post,
+    sleep: Callable[[float], None] = time.sleep,
 ) -> Iterator[dict[str, Any]]:
     offset, total = 0, None
     while total is None or offset < total:
         query = build_query(
             start, stop, bundle=bundle, collection=collection, size=page_size, offset=offset
         )
-        resp = json.loads(post(SEARCH_URL, json.dumps(query).encode()))
+        try:
+            resp = json.loads(post(SEARCH_URL, json.dumps(query).encode()))
+        except urllib.error.HTTPError as exc:
+            if exc.code < 500 or page_size <= MIN_PAGE:
+                raise
+            page_size = max(MIN_PAGE, page_size // 2)
+            log.warning("atlas HTTP %d; retrying with page size %d", exc.code, page_size)
+            sleep(2.0)
+            continue
         hits = resp["hits"]["hits"]
         if total is None:
             total = int(resp["hits"]["total"]["value"])
@@ -188,13 +202,20 @@ def search_frames(
     *,
     bundle: str = "artemis2_crew_camera",
     collection: str = "data_raw",
-    page_size: int = 500,
+    page_size: int = 100,
     post: Post = http_post,
+    sleep: Callable[[float], None] = time.sleep,
 ) -> pd.DataFrame:
     """Frames (one row per image product) with ``start <= start_utc < stop``."""
     rows: dict[str, dict[str, Any]] = {}
     for hit in iter_hits(
-        start, stop, bundle=bundle, collection=collection, page_size=page_size, post=post
+        start,
+        stop,
+        bundle=bundle,
+        collection=collection,
+        page_size=page_size,
+        post=post,
+        sleep=sleep,
     ):
         row = hit_to_row(hit)
         ok = (

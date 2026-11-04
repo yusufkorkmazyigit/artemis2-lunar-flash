@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import json
 import shutil
+import urllib.error
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -127,3 +128,28 @@ def test_cli_atlas_frames(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
     )
     assert rc == 0
     assert pd.read_csv(out)["activity_id"].tolist() == ["i_Window Team Position Swap"]
+
+
+def test_5xx_halves_page_size() -> None:
+    hits = [_hit(f"art002e00000{i}", f"2026-04-07T01:0{i}:00.000Z") for i in range(1, 6)]
+    fake = FakeAtlas(hits)
+    sizes: list[int] = []
+
+    def picky(url: str, body: bytes) -> bytes:
+        size = json.loads(body)["size"]
+        sizes.append(size)
+        if size > 15:
+            raise urllib.error.HTTPError(url, 502, "Bad Gateway", None, None)  # type: ignore[arg-type]
+        return fake(url, body)
+
+    df = search_frames(START, STOP, page_size=40, post=picky, sleep=lambda _: None)
+    assert len(df) == 5
+    assert sizes[:3] == [40, 20, 10]
+
+
+def test_4xx_is_not_retried() -> None:
+    def bad(url: str, body: bytes) -> bytes:
+        raise urllib.error.HTTPError(url, 400, "Bad Request", None, None)  # type: ignore[arg-type]
+
+    with pytest.raises(urllib.error.HTTPError):
+        search_frames(START, STOP, post=bad, sleep=lambda _: None)
