@@ -12,6 +12,9 @@ This project builds an open, time-aligned index that links every crew utterance 
 photographs taken at that moment, then uses it to search the Nikon Z9/D5 frames around each
 flash call-out for a transient point source — or to set a per-event brightness upper limit.
 
+   **→ Read the [project overview](docs/OVERVIEW.md)** for the goals, methods, findings so far and
+   planned outputs.
+
 > Data: NASA/CSA, Planetary Data System (PDS4). This project is not affiliated with or
 > endorsed by NASA, CSA, ESA or Airbus.
 
